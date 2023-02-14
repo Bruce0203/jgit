@@ -12,6 +12,8 @@ buildscript {
 
 plugins {
     kotlin("jvm") version "1.7.0"
+    id("maven-publish")
+
 }
 
 allprojects {
@@ -62,6 +64,45 @@ allprojects {
             }
         }
     }
+
+    lateinit var sourcesArtifact: PublishArtifact
+
+
+    tasks {
+        artifacts {
+            sourcesArtifact = archives(getByName("shadowJar")) {
+                classifier = null
+            }
+        }
+    }
+
+
+    apply(plugin = "maven-publish")
+
+    publishing {
+        val repo = System.getenv("GITHUB_REPOSITORY")
+        if (repo === null) return@publishing
+        repositories {
+            maven {
+                url = uri("https://s01.oss.sonatype.org/content/repositories/releases/")
+                credentials {
+
+                    username = System.getenv("SONATYPE_USERNAME")
+                    password = System.getenv("SONATYPE_PASSWORD")
+                }
+            }
+        }
+        publications {
+            register<MavenPublication>(project.name) {
+                groupId = "io.github.bruce0203"
+                artifactId = project.name.toLowerCase()
+                version = System.getenv("GITHUB_BUILD_NUMBER")?: project.version.toString()
+                artifact(sourcesArtifact)
+            }
+        }
+
+    }
+
 
 }
 
